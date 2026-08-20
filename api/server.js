@@ -150,7 +150,7 @@ app.delete('/habits/:id', async (req, res) => {
     const result = await pool.query('DELETE FROM habits WHERE id = $1 RETURNING *', [id]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Habit not found' });
+      return res.status(404).json({ error: 'Habit not found please chekt it again' });
     }
 
     res.json({
