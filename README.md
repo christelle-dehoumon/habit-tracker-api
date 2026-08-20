@@ -6,7 +6,7 @@ API REST conteneurisée avec Docker permettant de gérer un système de suivi d'
 
 Le projet est composé de trois services conteneurisés :
 
-- API : Application Node.js/Express exposant une API REST
+-L' API : Application Node.js/Express exposant une API REST
 - Base de données : PostgreSQL 16 pour la persistance des données
 - Adminer : Interface web pour la gestion visuelle de la base de données
 
