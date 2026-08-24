@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Habit Tracker</title>
+  <style>
+    :root {
+      --bg: #0d0b14;
+      --card: #1a1625;
+      --accent: #b48cff;
+      --red: #ff5c7a;
+      --text: #f0ecf7;
+      --muted: #948ba8;
+      --border: #2a2340;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container { max-width: 640px; margin: 0 auto; }
+    h1 { font-size: 1.8rem; margin-bottom: .25rem; }
+    .subtitle { color: var(--muted); margin-bottom: 1.5rem; }
+
+    .status-banner {
+      display: flex; align-items: center; gap: .6rem;
+      padding: 1rem 1.25rem; border-radius: 12px;
+      background: var(--card); margin-bottom: 1.25rem;
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); }
+    .dot.on { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+    .dot.off { background: var(--red); box-shadow: 0 0 10px var(--red); }
+
+    .message-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .message-box .label {
+      text-transform: uppercase; font-size: .72rem;
+      letter-spacing: .08em; color: var(--accent); margin-bottom: .4rem;
+    }
+    .message-box .msg { font-size: 1.15rem; font-weight: 600; }
+    .message-box .version { color: var(--muted); font-size: .85rem; margin-top: .4rem; }
+
+    .card {
+      background: var(--card); border-radius: 12px;
+      padding: 1.25rem; margin-bottom: 1.25rem;
+    }
+    .card h2 { font-size: 1.05rem; margin-bottom: 1rem; }
+
+    ul.habits { list-style: none; }
+    ul.habits li {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .7rem .9rem; border-radius: 8px;
+      background: var(--bg); margin-bottom: .5rem;
+    }
+    .habit-name { font-weight: 500; }
+    .habit-streak { color: var(--accent); font-size: .85rem; }
+    .empty { color: var(--muted); font-style: italic; }
+
+    form.add { display: flex; gap: .5rem; }
+    form.add input {
+      flex: 1; padding: .7rem .9rem; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--bg); color: var(--text);
+      font-size: .95rem;
+    }
+    form.add button {
+      padding: .7rem 1.1rem; border: none; border-radius: 8px;
+      background: var(--accent); color: #0d0b14; font-weight: 600;
+      cursor: pointer; font-size: .95rem;
+    }
+    form.add button:hover { filter: brightness(1.1); }
+
+    .error { color: var(--red); margin-top: .5rem; font-size: .85rem; }
+    footer { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Habit Tracker</h1>
+    <p class="subtitle">Interface de demonstration CI/CD</p>
+
+    <div class="status-banner">
+      <span class="dot" id="status-dot"></span>
+      <span id="status-text">Verification de l'API...</span>
+    </div>
+
+    <div class="message-box">
+      <div class="label">Message de l'API</div>
+      <div class="msg" id="api-message">—</div>
+      <div class="version" id="api-version"></div>
+    </div>
+
+    <div class="card">
+      <h2>What I have to do</h2>
+      <ul class="habits" id="habits-list">
+        <li class="empty">Chargement...</li>
+      </ul>
+      <div class="error" id="habits-error" hidden></div>
+    </div>
+
+    <div class="card">
+      <h2>New task</h2>
+      <form class="add" id="add-form">
+        <input type="text" id="habit-input" placeholder="Ex: arreter de me sousestimer" required />
+        <button type="submit">Ajouter</button>
+      </form>
+      <div class="error" id="add-error" hidden></div>
+    </div>
+
+    <footer>Habit Tracker API | Jenkins | Docker | Prometheus</footer>
+  </div>
+
+  <script>
+    const INFO_URL   = '/api/info';
+    const HABITS_URL = '/habits';
+
+    const $ = (id) => document.getElementById(id);
+
+    function setStatus(ok, text) {
+      $('status-dot').className = 'dot ' + (ok ? 'on' : 'off');
+      $('status-text').textContent = text;
+    }
+
+    async function loadInfo() {
+      try {
+        const r = await fetch(INFO_URL);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const data = await r.json();
+        $('api-message').textContent = data.message || data.name || '(pas de message)';
+        $('api-version').textContent = data.version ? 'version ' + data.version : '';
+        setStatus(true, 'API en ligne');
+      } catch (e) {
+        setStatus(false, 'API hors ligne');
+        $('api-message').textContent = 'Impossible de joindre l\'API';
+        $('api-version').textContent = '';
+      }
+    }
+
+    async function loadHabits() {
+      const list = $('habits-list');
+      try {
+        const r = await fetch(HABITS_URL);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const data = await r.json();
+        const habits = data.habits || [];
+        list.innerHTML = '';
+        if (habits.length === 0) {
+          list.innerHTML = '<li class="empty">Rien a faire pour l\'instant.</li>';
+          return;
+        }
+        for (const h of habits) {
+          const li = document.createElement('li');
+          const name = h.name || '(sans nom)';
+          const streak = h.streak != null ? h.streak : '';
+          li.innerHTML =
+            '<span class="habit-name">' + escapeHtml(name) + '</span>' +
+            (streak !== '' ? '<span class="habit-streak">' + escapeHtml(streak) + ' j</span>' : '');
+          list.appendChild(li);
+        }
+      } catch (e) {
+        list.innerHTML = '<li class="empty">Erreur de chargement.</li>';
+      }
+    }
+
+    $('add-form').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const input = $('habit-input');
+      const name = input.value.trim();
+      if (!name) return;
+      $('add-error').hidden = true;
+      try {
+        const r = await fetch(HABITS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        input.value = '';
+        loadHabits();
+      } catch (e) {
+        $('add-error').hidden = false;
+        $('add-error').textContent = 'Impossible d\'ajouter la tache.';
+      }
+    });
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[c]));
+    }
+
+    loadInfo();
+    loadHabits();
+    setInterval(() => { loadInfo(); loadHabits(); }, 5000);
+  </script>
+</body>
+</html>

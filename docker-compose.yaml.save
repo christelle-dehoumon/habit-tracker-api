@@ -72,7 +72,7 @@ services:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     ports:
-      - "9090:9090"
+      - "9091x:9090"
     networks:
       - habit_network
     restart: unless-stopped

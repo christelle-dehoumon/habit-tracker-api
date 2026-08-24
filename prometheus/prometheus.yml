@@ -1,0 +1,26 @@
+# Configuration Prometheus pour le monitoring des conteneurs Habit Tracker
+global:
+  scrape_interval: 15s     # collecte les métriques toutes les 15 secondes
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus lui-même
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # cAdvisor : métriques de TOUS les conteneurs Docker (CPU, RAM, réseau, disque)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # node-exporter : métriques de la machine hôte (CPU, RAM, disque du laptop)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # L'API Habit Tracker (endpoint /metrics exposé avec prom-client)
+  - job_name: 'habit-api'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['api:3000']
